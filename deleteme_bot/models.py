@@ -1,16 +1,31 @@
 from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
+import json
 from datetime import timedelta, datetime
 
 
 class AppConfiguration(models.Model):
-    id = models.IntegerField(primary_key=True, default=1)
+    id = models.IntegerField(primary_key=True)
     last_run = models.DateTimeField(default=datetime.utcnow())
-    name = models.CharField(max_length=20, default='deleteme_bot')
-    default_delay = models.DurationField(default=timedelta(days=7))
-    url = models.URLField(default='https://github.com/clbarnes/deleteme_bot')
+    name = models.CharField(max_length=20)
+    default_delay = models.DurationField()
+    url = models.URLField()
 
     @classmethod
     def get(cls):
+        try:
+            return cls.objects.get(pk=1)
+        except ObjectDoesNotExist:
+            with open('app_credentials.json') as f:
+                config = json.load(f)
+
+            cls.objects.create(
+                id=1,
+                name=config['name'],
+                default_delay=timedelta(seconds=config['default_delay']),
+                url=config['url']
+            )
+
         return cls.objects.get(pk=1)
 
 
