@@ -7,18 +7,23 @@ from .reddit_auth import get_reddit_instance
 
 COMMAND_RE = re.compile('^/posts(.*?)$', re.MULTILINE)
 
-FOOTNOTE_BASE = 'This comment will be deleted at {} UTC by [DeleteMe_bot](https://github.com/clbarnes/deleteme_bot).'
+FOOTNOTE_BASE = 'This comment will be deleted at {} UTC by [{}]({}).'
+
+config = AppConfiguration.get()
 
 
 def make_footnote(delete_on):
-    footnote_txt = FOOTNOTE_BASE.format(delete_on.isoformat())
+    footnote_txt = FOOTNOTE_BASE.format(
+        delete_on.isoformat(),
+        config.name,
+        config.url
+    )
     return '\n\n ^({})'.format(footnote_txt)
 
 
 def main():
     now = datetime.utcnow()
 
-    config = AppConfiguration.get()
     for user in RedditUser.objects.all():
         reddit = get_reddit_instance(user)
         redditor = reddit.user.me()
@@ -53,6 +58,5 @@ if __name__ == '__main__':
     StateCode.delete_expired()
     now = main()
 
-    config = AppConfiguration.get()
     config.last_run = now
     config.save()

@@ -7,6 +7,7 @@ class AppConfiguration(models.Model):
     last_run = models.DateTimeField(default=datetime.utcnow())
     name = models.CharField(max_length=20, default='deleteme_bot')
     default_delay = models.DurationField(default=timedelta(days=7))
+    url = models.URLField(default='https://github.com/clbarnes/deleteme_bot')
 
     @classmethod
     def get(cls):
