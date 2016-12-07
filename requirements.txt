@@ -1,0 +1,5 @@
+setuptools==27.2.0
+Django==1.10.3
+praw
+requests
+dateparser
