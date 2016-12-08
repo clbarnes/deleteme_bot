@@ -7,7 +7,7 @@ from .reddit_auth import get_auth_url, get_refresh_token, get_reddit_instance
 
 def auth_thanks(request):
     query_terms = request.GET.copy()
-    code = query_terms['query']
+    code = query_terms['code']
 
     refresh_token = get_refresh_token(code)
     user_obj = RedditUser.objects.create(refresh_token=refresh_token)

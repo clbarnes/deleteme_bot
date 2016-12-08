@@ -1,29 +1,30 @@
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
-import json
+import os
 from datetime import timedelta, datetime
 
 
-class AppConfiguration(models.Model):
+class DeletemeBotSingleton(models.Model):
     id = models.IntegerField(primary_key=True)
     last_run = models.DateTimeField(default=datetime.utcnow())
     name = models.CharField(max_length=20)
     default_delay = models.DurationField()
     url = models.URLField()
 
+    class Meta:
+        app_label = 'deleteme_bot'
+        db_table = 'deleteme_bot_singleton'
+
     @classmethod
     def get(cls):
         try:
             return cls.objects.get(pk=1)
         except ObjectDoesNotExist:
-            with open('app_credentials.json') as f:
-                config = json.load(f)
-
             cls.objects.create(
                 id=1,
-                name=config['name'],
-                default_delay=timedelta(seconds=config['default_delay']),
-                url=config['url']
+                name=os.environ['DMB_NAME'],
+                default_delay=timedelta(seconds=int(os.environ['DMB_DEFAULT_DELAY'])),
+                url=os.environ['DMB_URL']
             )
 
         return cls.objects.get(pk=1)
@@ -33,10 +34,14 @@ class RedditUser(models.Model):
     # username = models.CharField(max_length=20, unique=True)  # privacy reasons
     # access_token = models.CharField(max_length=30, help_text='Use RedditUser.get_valid_token() to get this.')
     # expires = models.DateTimeField()
-    refresh_token = models.CharField(max_length=30, unique=True)
+    refresh_token = models.CharField(max_length=80, unique=True)
     # latest_post = models.DateTimeField(default=datetime.utcnow())
     # delete_all = models.BooleanField(default=False)
     # default_lapse = models.DurationField(default=timedelta(days=7))
+
+    class Meta:
+        app_label = 'deleteme_bot'
+        db_table = 'reddit_user'
 
     # def get_valid_token(self):
     #     if datetime.utcnow() >= self.expires:
@@ -52,10 +57,18 @@ class RedditComment(models.Model):
     comment_id = models.CharField(max_length=10, help_text='Do not include type prefix', unique=True)
     delete_on = models.DateTimeField()
 
+    class Meta:
+        app_label = 'deleteme_bot'
+        db_table = 'reddit_comment'
+
 
 class StateCode(models.Model):
-    state_code = models.CharField(max_length=30, unique=True)
+    state_code = models.CharField(max_length=80, unique=True)
     expires = models.DateTimeField(default=datetime.utcnow() + timedelta(hours=1))
+
+    class Meta:
+        app_label = 'deleteme_bot'
+        db_table = 'state_code'
 
     @classmethod
     def delete_expired(cls):

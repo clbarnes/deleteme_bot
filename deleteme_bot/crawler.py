@@ -1,7 +1,7 @@
 from datetime import datetime
 import re
 import dateparser
-from .models import StateCode, RedditUser, RedditComment, AppConfiguration
+from .models import StateCode, RedditUser, RedditComment, DeletemeBotSingleton
 from .reddit_auth import get_reddit_instance
 
 
@@ -9,7 +9,7 @@ COMMAND_RE = re.compile('^/posts(.*?)$', re.MULTILINE)
 
 FOOTNOTE_BASE = 'This comment will be deleted at {} UTC by [{}]({}).'
 
-config = AppConfiguration.get()
+config = DeletemeBotSingleton.get()
 
 
 def make_footnote(delete_on):

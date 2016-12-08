@@ -2,7 +2,9 @@ from django.conf.urls import url
 
 from . import views
 
+app_name = 'deleteme_bot'
+
 urlpatterns = [
-    url(r'^auth_thanks$', views.auth_thanks, name='deleteme_bot:auth_thanks'),
-    url(r'^landing', views.landing, name='deleteme_bot:landing')
+    url(r'^$', views.landing, name='landing'),
+    url(r'^auth_thanks/', views.auth_thanks, name='auth_thanks')
 ]

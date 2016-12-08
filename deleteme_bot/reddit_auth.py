@@ -1,14 +1,15 @@
+import os
 from praw import Reddit
 import requests
-import json
 from django.urls import reverse
 
-with open('app_credentials.json') as f:
-    app_credentials = json.load(f)
+# todo
+BASE_URL = 'http://localhost:8000'  # to allow redirect_uri parity with reddit setting
 
-REDIRECT_URI = "http://www.example.com/unused/redirect/uri"  # todo
+USER_AGENT = "deleteme_bot/0.1 by tunisia3507"
 
-USER_AGENT = "t3507_deleter/0.1 by tunisia3507"
+CLIENT_ID = os.environ['DMB_CLIENT_ID']
+CLIENT_SECRET = os.environ['DMB_CLIENT_SECRET']
 
 # AUTH_URL_BASE = "https://www.reddit.com/api/v1/authorize?" + \
 #                 "client_id={client_id}" + \
@@ -17,15 +18,15 @@ USER_AGENT = "t3507_deleter/0.1 by tunisia3507"
 #                 "&redirect_uri={redirect_uri}" + \
 #                 "&duration=permanent" + \
 #                 "&scope=edit".format(
-#                     client_id=app_credentials['client_id'],
+#                     client_id=CLIENT_ID,
 #                     redirect_uri=reverse('deleteme_bot:landing')
 #                 )
 
 
 def get_refresh_token(one_time_code):
     # reddit = Reddit(
-    #     client_id=app_credentials['client_id'],
-    #     client_secret=app_credentials['client_secret'],
+    #     client_id=CLIENT_ID,
+    #     client_secret=CLIENT_SECRET,
     #     redirect_uri=reverse('deleteme_bot:landing'),
     #     user_agent=USER_AGENT
     # )
@@ -36,32 +37,30 @@ def get_refresh_token(one_time_code):
 def get_reddit_instance(user_obj=None):
     if user_obj:
         return Reddit(
-            client_id=app_credentials['client_id'],
-            client_secret=app_credentials['client_secret'],
+            client_id=CLIENT_ID,
+            client_secret=CLIENT_SECRET,
+            # refresh_token=refresh_token,
             refresh_token=user_obj.refresh_token,
             user_agent=USER_AGENT
         )
     else:
         return Reddit(
-            client_id=app_credentials['client_id'],
-            client_secret=app_credentials['client_secret'],
+            client_id=CLIENT_ID,
+            client_secret=CLIENT_SECRET,
+            # redirect_uri=reverse('deleteme_bot:auth_thanks'),
+            redirect_uri=BASE_URL + reverse('deleteme_bot:auth_thanks'),
             user_agent=USER_AGENT
         )
 
 
 def get_auth_url(state_code):
-    reddit = Reddit(
-            client_id=app_credentials['client_id'],
-            client_secret=app_credentials['client_secret'],
-            redirect_uri=reverse('deleteme_bot:landing'),
-            user_agent=USER_AGENT
-        )
-    return reddit.auth.url(['edit'], state_code, 'permanent')
+    reddit = get_reddit_instance()
+    return reddit.auth.url(['identity', 'edit'], state_code, 'permanent')
 
 HEADERS = {
     'user-agent': USER_AGENT,
-    'user': app_credentials['client_id'],
-    'password': app_credentials['client_secret']
+    'user': CLIENT_ID,
+    'password': CLIENT_SECRET
 }
 
 
@@ -105,6 +104,3 @@ def revoke_token(access_token):
     )
 
     return response.status_code == 204
-
-if __name__ == '__main__':
-    print(1+1)
