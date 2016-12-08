@@ -55,7 +55,7 @@ def get_reddit_instance(user_obj=None):
 
 def get_auth_url(state_code):
     reddit = get_reddit_instance()
-    return reddit.auth.url(['identity', 'edit'], state_code, 'permanent')
+    return reddit.auth.url(['identity', 'read', 'edit', 'history'], state_code, 'permanent')
 
 HEADERS = {
     'user-agent': USER_AGENT,

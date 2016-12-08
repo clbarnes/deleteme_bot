@@ -1,8 +1,9 @@
 from datetime import datetime
 import re
 import dateparser
-from .models import StateCode, RedditUser, RedditComment, DeletemeBotSingleton
-from .reddit_auth import get_reddit_instance
+from django.core.management.base import BaseCommand, CommandError
+from deleteme_bot.models import StateCode, RedditUser, RedditComment, DeletemeBotSingleton
+from deleteme_bot.reddit_auth import get_reddit_instance
 
 
 COMMAND_RE = re.compile('^/posts(.*?)$', re.MULTILINE)
@@ -21,14 +22,18 @@ def make_footnote(delete_on):
     return '\n\n ^({})'.format(footnote_txt)
 
 
-def main():
+def datetime_to_timestamp(dt):
+    return int(dt.strftime('%s'))
+
+
+def find_new_comments_and_delete_old():
     now = datetime.utcnow()
 
     for user in RedditUser.objects.all():
         reddit = get_reddit_instance(user)
         redditor = reddit.user.me()
         for comment in redditor.comments.new():
-            if datetime.fromtimestamp(comment.created_utc) < config.last_run:
+            if comment.created_utc < datetime_to_timestamp(config.last_run):
                 break
 
             txt = comment.body
@@ -39,7 +44,7 @@ def main():
 
             command = match.groups()[0].strip()
             if command:
-                delete_on = dateparser.parse(command, settings={'TIMEZONE': 'UTC'})
+                delete_on = dateparser.parse(command)
             else:
                 delete_on = now + config.default_delay
 
@@ -54,9 +59,20 @@ def main():
     return now
 
 
-if __name__ == '__main__':
+def main():
     StateCode.delete_expired()
-    now = main()
+    now = find_new_comments_and_delete_old()
 
     config.last_run = now
     config.save()
+
+
+class Command(BaseCommand):
+    help = 'Crawls for new data'
+
+    def handle(self, *args, **options):
+        main()
+
+
+if __name__ == '__main__':
+    main()
