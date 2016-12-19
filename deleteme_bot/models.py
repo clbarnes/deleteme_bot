@@ -1,12 +1,14 @@
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
 import os
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
+
+MAX_STRIKES = 5
 
 class DeletemeBotSingleton(models.Model):
     id = models.IntegerField(primary_key=True)
-    last_run = models.DateTimeField(default=datetime.utcnow())
+    last_run = models.DateTimeField()
     name = models.CharField(max_length=20)
     default_delay = models.DurationField()
     url = models.URLField()
@@ -23,6 +25,7 @@ class DeletemeBotSingleton(models.Model):
             cls.objects.create(
                 id=1,
                 name=os.environ['DMB_NAME'],
+                last_run=datetime.now(timezone.utc),
                 default_delay=timedelta(seconds=int(os.environ['DMB_DEFAULT_DELAY'])),
                 url=os.environ['DMB_URL']
             )
@@ -31,25 +34,20 @@ class DeletemeBotSingleton(models.Model):
 
 
 class RedditUser(models.Model):
-    # username = models.CharField(max_length=20, unique=True)  # privacy reasons
-    # access_token = models.CharField(max_length=30, help_text='Use RedditUser.get_valid_token() to get this.')
-    # expires = models.DateTimeField()
     refresh_token = models.CharField(max_length=80, unique=True)
-    # latest_post = models.DateTimeField(default=datetime.utcnow())
-    # delete_all = models.BooleanField(default=False)
-    # default_lapse = models.DurationField(default=timedelta(days=7))
+    strikes = models.IntegerField(default=0)
 
     class Meta:
         app_label = 'deleteme_bot'
         db_table = 'reddit_user'
 
-    # def get_valid_token(self):
-    #     if datetime.utcnow() >= self.expires:
-    #         access_token, expires = refresh_auth(self.refresh_token)
-    #         self.access_token = access_token
-    #         self.expires = expires
-    #
-    #     return self.access_token
+    def increment_strikes(self):
+        self.strikes = models.F('strikes') + 1
+        self.save()
+
+    @classmethod
+    def delete_revoked(cls):
+        cls.objects.filter(strikes__gte=MAX_STRIKES).delete()
 
 
 class RedditComment(models.Model):
@@ -64,7 +62,7 @@ class RedditComment(models.Model):
 
 class StateCode(models.Model):
     state_code = models.CharField(max_length=80, unique=True)
-    expires = models.DateTimeField(default=datetime.utcnow() + timedelta(hours=1))
+    expires = models.DateTimeField(default=datetime.now(timezone.utc) + timedelta(hours=1))
 
     class Meta:
         app_label = 'deleteme_bot'
@@ -72,7 +70,7 @@ class StateCode(models.Model):
 
     @classmethod
     def delete_expired(cls):
-        cls.objects.filter(expires__lt=datetime.utcnow()).delete()
+        cls.objects.filter(expires__lt=datetime.now(timezone.utc)).delete()
 
     @classmethod
     def exists(cls, state_code):
