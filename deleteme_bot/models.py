@@ -6,6 +6,7 @@ from datetime import timedelta, datetime, timezone
 
 MAX_STRIKES = 5
 
+
 class DeletemeBotSingleton(models.Model):
     id = models.IntegerField(primary_key=True)
     last_run = models.DateTimeField()

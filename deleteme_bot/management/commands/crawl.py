@@ -48,6 +48,8 @@ class Command(BaseCommand):
         now = datetime.now(timezone.utc)
         last_run = datetime_to_timestamp(config.last_run)
 
+        RedditUser.delete_revoked()
+
         for user in RedditUser.objects.all():
             try:
                 reddit = get_reddit_instance(user)
